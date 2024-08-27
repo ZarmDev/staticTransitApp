@@ -11,6 +11,8 @@
     <!-- Used to test on the web -->
     <script src="./bundle.js"></script>
     <script src="./scripts/out.js"></script>
+    <!-- <script src="./scripts/svgout.js"></script> -->
+     <!-- <script src="./scripts/svgout2.js"></script> -->
     <script src="./scripts/examples.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/gh/ZarmDev/transitHelper@experimental/dist/bundle.js"></script> -->
     <style>
@@ -49,15 +51,24 @@
         window.iconFileLocations = getIconFileLocations()
         const testing = document.getElementById('testing')
         const busInput = document.getElementById('busApiKey')
-        var map = L.map('map').setView(window.userLocation, 15);
+        var map = L.map('map').setView(window.userLocation, 5);
         // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         //     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         //     maxZoom: 18,
         // }).addTo(map);
-        // var svgUrl = './images/nyc.svg';
-        var imageUrl = './images/nyc3.png'
-        // var svgElement = document.createElement('img');
-        // svgElement.src = pngUrl
+        var svgUrl = './images/nycmodified2.svg';
+        // var imageUrl = './images/nyc3.png'
+        var svgElement = document.createElement('img');
+        // svgElement.className = 'crop'
+        // svgElement.style = ``
+        svgElement.src = svgUrl
+        svgElement.style.width = '25%'
+        svgElement.style.height = '25%'
+        // svgElement.setAttribute('viewBox', "-100 -100 100 100")
+        // var svgElement = document.createElement("svg");
+        // // svgElement.className = 'crop';
+        // svgElement.setAttribute('viewBox', '0 0 10 10');
+        // svgElement.innerHTML = getNYCsvg();
         var imageBounds = [[40.3, -74.5], [41.1, -73.45]];
         function changeLat(num) {
             imageBounds[0][0] += num;
@@ -70,8 +81,8 @@
         changeLat(0.0255); // Increase -> Move down
         changeLong(0.018); // Increase -> Move left
         // var imageBounds = [[40.712216, -74.22655], [40.773941, -74.12544]];
-        // L.svgOverlay(svgElement, svgBounds).addTo(map);
-        L.imageOverlay(imageUrl, imageBounds).addTo(map);
+        L.svgOverlay(svgElement, imageBounds).addTo(map);
+        // L.imageOverlay(imageUrl, imageBounds).addTo(map);
         var markerLayer = L.layerGroup().addTo(map);
 
         map.on('click', function (e) {
@@ -106,14 +117,6 @@
         // } else {
         //     console.error("Geolocation is not supported by this browser.");
         // }
-
-        setInterval(() => {
-            // testing.innerText = window.userLocation
-            // ns.innerText = window.iconFileLocations[0].slice(0, 100)
-            // if (window.userLocation != null && map != null) {
-            //     map.setView(window.userLocation, 26);
-            // }
-        }, 1000)
         async function test() {
             var trainLineShapes = await getTrainLineShapes(outputShapes());
             // var trainLineCoords = await getAllTrainStopCoordinates(outputStops());

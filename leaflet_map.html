@@ -29,27 +29,65 @@
             padding: 0;
             margin: 0;
         }
+
+        input {
+            width: 100vw;
+        }
     </style>
 </head>
 
 <body>
-    <p id="testing">Testing</p>
-    <p id="ns">Ns</p>
-    <label for="key">Bus api key</label>
-    <input id="busApiKey" name="key" type="text">
+    <p>The stops are all saved locally on your device! However, the map itself and the train arrivals requries internet.
+    </p>
+    <p>Also, try clicking on the map to change location or try getting arrivals from one of the stops</p>
+    <!-- <label for="key">Bus api key</label>
+    <input id="busApiKey" name="key" type="text"> -->
     <div id="map"></div>
     <script>
         // Used to test on the web
         window.userLocation = [40.71775244918452, -73.9990371376651]
         window.iconFileLocations = getIconFileLocations()
         const testing = document.getElementById('testing')
-        const ns = document.getElementById('ns')
         const busInput = document.getElementById('busApiKey')
-        var map = L.map('map').setView(window.userLocation, 13);
+        var map = L.map('map').setView(window.userLocation, 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
             maxZoom: 18,
         }).addTo(map);
+        var markerLayer = L.layerGroup().addTo(map);
+
+        map.on('click', function (e) {
+            // e.latlng contains the latitude and longitude of the click event
+            var latitude = e.latlng.lat;
+            var longitude = e.latlng.lng;
+            // console.log("Map clicked at Latitude: " + latitude + ", Longitude: " + longitude);
+            window.userLocation = [latitude, longitude]
+            test()
+            markerLayer.clearLayers();
+        });
+
+        // Check if geolocation is supported
+        // if (navigator.geolocation) {
+        //     // Request the user's location
+        //     navigator.geolocation.getCurrentPosition(
+        //         function (position) {
+        //             // Success callback
+        //             var latitude = position.coords.latitude;
+        //             var longitude = position.coords.longitude;
+        //             console.log("Latitude: " + latitude + ", Longitude: " + longitude);
+
+        //             window.userLocation = [latitude, longitude]
+
+        //             // You can now use userLocation object as needed
+        //         },
+        //         function (error) {
+        //             // Error callback
+        //             console.error("Error Code = " + error.code + " - " + error.message);
+        //         }
+        //     );
+        // } else {
+        //     console.error("Geolocation is not supported by this browser.");
+        // }
 
         setInterval(() => {
             // testing.innerText = window.userLocation
@@ -66,8 +104,8 @@
             // const distance = 0.004;
             const distance = 0.01;
             var nearbyTrainLineCoords = await getNearbyStops(allTrainStopCoordinates, window.userLocation, distance);
-            const latSpan = "0.005";
-            const lonSpan = "0";
+            // const latSpan = "0.005";
+            // const lonSpan = "0";
             // const nearbyBusStopCoords = await getNearbyBusStops(exampleLocation, latSpan, lonSpan, busInput.value);
             // var nearbyBusStopCoords = await getNearbyStops(processedBusStopData, exampleLocation, 0.004);
             function renderTrainLineShapes() {
@@ -88,7 +126,7 @@
                     for (var z = 0; z < latlngs.length; z += 2) {
                         test.push(latlngs[z])
                     }
-                    var polyline = L.polyline(test, { color: color, smoothFactor: '12.00' }).addTo(map);
+                    var polyline = L.polyline(test, { color: color, smoothFactor: '1.00' }).addTo(map);
                     map.addLayer(polyline);
                     // map.fitBounds(polyline.getBounds());
                 }
@@ -111,7 +149,7 @@
                     if (trainLines) {
                         let splitTrainLines = trainLines.split('-');
                         let iconHTML = '';
-                        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "7", "7d", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "w", "z"].map((item) => {return item.toUpperCase()})
+                        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "7", "7d", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "w", "z"].map((item) => { return item.toUpperCase() })
                         for (var j = 0; j < splitTrainLines.length; j++) {
                             // let filepath = './images/svg/' + splitTrainLines[j] + '.svg';
                             // Basically, window.iconFileLocations is ordered the same with trainLinesWithIcons so just get the index of the train line based on the train lines which are found in stops.txt
@@ -132,16 +170,16 @@
                                 '</div>'].join('\n'),
                             iconSize: [5, 5] // Adjust the size as needed
                         });
-                        let marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+                        let marker = L.marker(latlng, { icon: customIcon }).addTo(markerLayer);
                         // doesn't matter which train line - they are all grouped together
                         let trainLine = trainLines[0];
                         marker.on('click', async function (stopID, stopname, trainLine) {
                             const targetStopID = stopID
                             const direction = ""
                             const date = Date.now()
-                            // const realtime = await getTrainArrivals(trainLine, targetStopID, date, direction);
-                            // console.log(realtime)
-                            // alert(realtime)
+                            const realtime = await getTrainArrivals(trainLine, targetStopID, date, direction);
+                            console.log(realtime)
+                            alert(JSON.stringify(realtime))
                         }.bind(null, stopID, stopname, trainLine));
                     } else {
                         // console.log(stopname)
@@ -154,7 +192,7 @@
                             // shadowSize: [68, 95],
                             // shadowAnchor: [22, 94]
                         });
-                        marker = L.marker(latlng, { icon: busIcon }).addTo(map);
+                        marker = L.marker(latlng, { icon: busIcon }).addTo(markerLayer);
                     }
                     // marker.bindTooltip(stopname)
                 }
@@ -163,12 +201,12 @@
             renderTrainLineShapes();
             renderMarkers(nearbyTrainLineCoords);
             // renderMarkers(nearbyBusStopCoords);
-            L.circle(window.userLocation, { radius: 200 }).addTo(map);
+            L.circle(window.userLocation, { radius: 200 }).addTo(markerLayer);
         }
 
-        busInput.addEventListener('change', async () => {
-            test();
-        })
+        // busInput.addEventListener('change', async () => {
+        //     test();
+        // })
         setTimeout(test, 500)
     </script>
 </body>

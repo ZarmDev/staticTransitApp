@@ -66,36 +66,6 @@
             markerLayer.clearLayers();
         });
 
-        // Check if geolocation is supported
-        // if (navigator.geolocation) {
-        //     // Request the user's location
-        //     navigator.geolocation.getCurrentPosition(
-        //         function (position) {
-        //             // Success callback
-        //             var latitude = position.coords.latitude;
-        //             var longitude = position.coords.longitude;
-        //             console.log("Latitude: " + latitude + ", Longitude: " + longitude);
-
-        //             window.userLocation = [latitude, longitude]
-
-        //             // You can now use userLocation object as needed
-        //         },
-        //         function (error) {
-        //             // Error callback
-        //             console.error("Error Code = " + error.code + " - " + error.message);
-        //         }
-        //     );
-        // } else {
-        //     console.error("Geolocation is not supported by this browser.");
-        // }
-
-        setInterval(() => {
-            // testing.innerText = window.userLocation
-            // ns.innerText = window.iconFileLocations[0].slice(0, 100)
-            // if (window.userLocation != null && map != null) {
-            //     map.setView(window.userLocation, 26);
-            // }
-        }, 1000)
         async function test() {
             var trainLineShapes = await getTrainLineShapes(outputShapes());
             // var trainLineCoords = await getAllTrainStopCoordinates(outputStops());
@@ -104,6 +74,7 @@
             // const distance = 0.004;
             const distance = 0.01;
             var nearbyTrainLineCoords = await getNearbyStops(allTrainStopCoordinates, window.userLocation, distance);
+            console.log(nearbyTrainLineCoords)
             // const latSpan = "0.005";
             // const lonSpan = "0";
             // const nearbyBusStopCoords = await getNearbyBusStops(exampleLocation, latSpan, lonSpan, busInput.value);
@@ -149,8 +120,12 @@
                     if (trainLines) {
                         let splitTrainLines = trainLines.split('-');
                         let iconHTML = '';
-                        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "7", "7d", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "w", "z"].map((item) => { return item.toUpperCase() })
+                        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "6x", "7", "7x", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "t", "w", "z"].map((item) => { return item.toUpperCase() })
                         for (var j = 0; j < splitTrainLines.length; j++) {
+                            console.log(splitTrainLines[j])
+                            if (["FX", "6X", "7X"].includes(splitTrainLines[j])) {
+                                continue;
+                            }
                             // let filepath = './images/svg/' + splitTrainLines[j] + '.svg';
                             // Basically, window.iconFileLocations is ordered the same with trainLinesWithIcons so just get the index of the train line based on the train lines which are found in stops.txt
                             let filepath = window.iconFileLocations[trainLinesWithIcons.indexOf(splitTrainLines[j])]

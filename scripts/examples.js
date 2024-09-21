@@ -2,6 +2,7 @@ function getExampleLocation() {
     return [40.71775244918452, -73.9990371376651]
 }
 
+// Generate the array in generateIconFileLocations
 function getIconFileLocations() {
     return ['./images/svg/1.svg',
         './images/svg/2.svg',
@@ -9,8 +10,9 @@ function getIconFileLocations() {
         './images/svg/4.svg',
         './images/svg/5.svg',
         './images/svg/6.svg',
+        './images/svg/6x.svg',
         './images/svg/7.svg',
-        './images/svg/7d.svg',
+        './images/svg/7x.svg',
         './images/svg/a.svg',
         './images/svg/b.svg',
         './images/svg/c.svg',
@@ -29,6 +31,7 @@ function getIconFileLocations() {
         './images/svg/sf.svg',
         './images/svg/sir.svg',
         './images/svg/sr.svg',
+        './images/svg/t.svg',
         './images/svg/w.svg',
         './images/svg/z.svg',
     ]

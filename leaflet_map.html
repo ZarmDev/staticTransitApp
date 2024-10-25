@@ -14,6 +14,15 @@
     <script src="./scripts/examples.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/gh/ZarmDev/transitHelper@experimental/dist/bundle.js"></script> -->
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+        body {
+            font-family: "Open Sans", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 300;
+            font-style: normal;
+        }
+
         .custom-icon {
             position: relative;
         }
@@ -25,23 +34,151 @@
         #map {
             width: 100vw;
             height: 100vh;
-            position: absolute;
+            position: relative;
             padding: 0;
             margin: 0;
+        }
+
+        #map * {
+            z-index: 0 !important;
         }
 
         input {
             width: 100vw;
         }
+
+        #arrivals {
+            display: none;
+            position: absolute;
+            background-color: rgb(255, 255, 255);
+            /* border: solid black 2px; */
+            /* https://getcssscan.com/css-box-shadow-examples */
+            box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+            padding: 2ch;
+            border-radius: 10px;
+            left: 20px;
+            top: 20px;
+            z-index: 1;
+        }
+
+        #arrivals #northbound {
+            display: none;
+        }
+
+        #arrivals #southbound {
+            display: none;
+        }
+
+        .option {
+            text-decoration: underline;
+            text-decoration-color: blueviolet;
+            transition: 0.75s;
+        }
+
+        .option:hover {
+            background-color: rgba(0, 0, 0, 0.343);
+            cursor: pointer;
+        }
+
+        @keyframes removeAnimation {
+            from {
+                left: 0px;
+                display: block;
+            }
+
+            to {
+                left: -400px;
+            }
+        }
+
+        .removeAnimation {
+            animation-name: removeAnimation;
+            animation-duration: 1s;
+            animation-timing-function: cubic-bezier(0.79, 0.33, 0.14, 0.53);
+        }
+
+        .X {
+            border: none;
+            padding: 1ch;
+            border-radius: 5px;
+            transition: 0.5s;
+            /* cursor: pointer; */
+            position: absolute;
+            left: 90%;
+            background-color: rgba(128, 128, 128, 0.288);
+        }
+
+        .X:hover {
+            /* background-color: rgb(76, 76, 76); */
+        }
+
+        #firstStartup {
+            display: none;
+        }
+
+        #alerts span {
+            background-color: aliceblue;
+            padding: 2ch;
+            border-radius: 10px;
+            position: absolute;
+            left: 90vw;
+            top: 1vh;
+            z-index: 3;
+            cursor: pointer;
+            transition: 0.5s;
+        }
+
+        #alerts span:hover {
+            background-color: rgb(212, 232, 250);
+        }
+
+        #alertsContent {
+            position: absolute;
+            left: 65vw;
+            width: auto;
+            height: auto;
+            z-index: 3;
+            border-radius: 10px;
+            background-color: rgba(71, 59, 85, 0.507);
+        }
+        #alertsContent img {
+            width: 4ch;
+            height: 4ch;
+            margin: 1ch;
+        }
+        #alertsContent p {
+            color: white;
+            margin: 0.2ch;
+        }
     </style>
 </head>
 
 <body>
-    <p>The stops are all saved locally on your device! However, the map itself and the train arrivals requries internet.
-    </p>
-    <p>Also, try clicking on the map to change location or try getting arrivals from one of the stops</p>
     <!-- <label for="key">Bus api key</label>
     <input id="busApiKey" name="key" type="text"> -->
+    <div id="firstStartup">
+        <p>The stops are all saved locally on your device! However, the map itself and the train arrivals requries
+            internet.
+        </p>
+        <p>Also, try clicking on the map to change location or try getting arrivals from one of the stops</p>
+    </div>
+    <div id="alerts">
+        <button class="X" id="serviceX"><</button>
+        <span id="alertsDropdown">Service Alerts</span>
+        <div id="alertsContent">
+
+        </div>
+    </div>
+    <div id="arrivals">
+        <button class="X" id="arrivalsX"><</button>
+                <h1>Arrivals for the <span id="trainToShow"></span> train</h1>
+                <div id="arrivalsContent">
+                    <span class="option">Northbound</span>
+                    <span class="option">Southbound</span>
+                    <div id="northbound"></div>
+                    <div id="southbound"></div>
+                </div>
+    </div>
     <div id="map"></div>
     <script>
         // Used to test on the web
@@ -49,6 +186,92 @@
         window.iconFileLocations = getIconFileLocations()
         const testing = document.getElementById('testing')
         const busInput = document.getElementById('busApiKey')
+        const arrivalsContent = document.getElementById('arrivalsContent');
+        const arrivals = document.getElementById('arrivals');
+        const trainToShow = document.getElementById('trainToShow');
+        const northbound = document.getElementById('northbound');
+        const southbound = document.getElementById('southbound');
+        const alertsDropdown = document.getElementById('alertsDropdown');
+        const alertsContent = document.getElementById('alertsContent');
+
+        // from transitHelper
+        function getTrainLineColor(line) {
+            let color = "";
+            // Should add H, FS and GS later... (Franklin shuttle and Grand Central Shuttle) and H is the old name of the Rockaway shuttle
+            if (["A", "C", "E"].includes(line)) {
+                color = "#0039A6"
+            } else if (["B", "D", "F", "M"].includes(line)) {
+                color = "#FF6319"
+            } else if (["G"].includes(line)) {
+                color = "#6CBE45"
+            } else if (["J", "Z"].includes(line)) {
+                color = "#996633"
+            } else if (["N", "Q", "R", "W"].includes(line)) {
+                color = "#FCCC0A"
+            } else if (["L"].includes(line)) {
+                color = "#A7A9AC"
+            } else if (["1", "2", "3"].includes(line)) {
+                color = "#EE352E"
+            } else if (["4", "5", "6"].includes(line)) {
+                color = "#00933C"
+            } else if (["7"].includes(line)) {
+                color = "#B933AD"
+            } else if (["SI"].includes(line)) {
+                // not official color, just added it quickly
+                color = "#2A9FDD"
+            }
+            return color
+        }
+        
+        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "6x", "7", "7x", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "t", "w", "z"].map((item) => { return item.toUpperCase() })
+        alertsDropdown.addEventListener("click", async () => {
+            //         [line: string]: {
+            //     headerText: string,
+            //     descriptionText: string | null
+            // }
+            const alerts = await getTrainServiceAlerts(true, false);
+            const lines = Object.keys(alerts);
+            const text = Object.values(alerts);
+            for (var i = 0; i < lines.length; i++) {
+                const line = document.createElement('img');
+                if (["FX", "6X", "7X"].includes(lines[i])) {
+                    continue;
+                }
+                let filepath = window.iconFileLocations[trainLinesWithIcons.indexOf(lines[i])]
+                line.src = filepath;
+                alertsContent.appendChild(line)
+                const headerText = document.createElement('p');
+                headerText.innerHTML = text[i]["headerText"];
+                alertsContent.appendChild(headerText)
+            }
+        })
+
+        const arrivalsX = document.getElementById('arrivalsX');
+        arrivalsX.addEventListener('click', () => {
+            arrivals.className = 'removeAnimation'
+            arrivals.style.display = 'none'
+            setTimeout(() => {
+                arrivals.className = ''
+            }, 1000)
+        })
+
+        const options = document.getElementsByClassName('option');
+
+        for (var i = 0; i < options.length; i++) {
+            // Pass in i to make sure it can access options[i]
+            (function (i) {
+                options[i].addEventListener('click', () => {
+                    if (options[i].innerText == 'Northbound') {
+                        northbound.style.display = 'block';
+                        southbound.style.display = 'none';
+                    } else {
+                        southbound.style.display = 'block';
+                        northbound.style.display = 'none';
+                    }
+                })
+            })(i);
+        }
+
         var map = L.map('map').setView(window.userLocation, 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
@@ -120,9 +343,9 @@
                     if (trainLines) {
                         let splitTrainLines = trainLines.split('-');
                         let iconHTML = '';
-                        const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "6x", "7", "7x", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "t", "w", "z"].map((item) => { return item.toUpperCase() })
+                        // const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "6x", "7", "7x", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "t", "w", "z"].map((item) => { return item.toUpperCase() })
                         for (var j = 0; j < splitTrainLines.length; j++) {
-                            console.log(splitTrainLines[j])
+                            // console.log(splitTrainLines[j])
                             if (["FX", "6X", "7X"].includes(splitTrainLines[j])) {
                                 continue;
                             }
@@ -149,12 +372,35 @@
                         // doesn't matter which train line - they are all grouped together
                         let trainLine = trainLines[0];
                         marker.on('click', async function (stopID, stopname, trainLine) {
+                            console.log(stopID)
+                            northbound.innerHTML = ''
+                            southbound.innerHTML = ''
                             const targetStopID = stopID
                             const direction = ""
                             const date = Date.now()
                             const realtime = await getTrainArrivals(trainLine, targetStopID, date, direction);
-                            console.log(realtime)
-                            alert(JSON.stringify(realtime))
+                            arrivals.style.display = 'block';
+                            trainToShow.innerHTML = realtime[0]["line"];
+                            var northBound = [];
+                            var southBound = [];
+                            for (var i = 0; i < realtime.length; i++) {
+                                if (realtime[i]["direction"] == 'S') {
+                                    southBound.push(Number(realtime[i]["arrivalTime"]))
+                                } else {
+                                    northBound.push(Number(realtime[i]["arrivalTime"]))
+                                }
+                            }
+                            for (var i = 0; i < southBound.length; i++) {
+                                const arrivalElement = document.createElement('div');
+                                arrivalElement.innerHTML = `In ${southBound[i]} minutes`;
+                                southbound.appendChild(arrivalElement)
+                            }
+                            for (var i = 0; i < northBound.length; i++) {
+                                const arrivalElement = document.createElement('div');
+                                arrivalElement.innerHTML = `In ${northBound[i]} minutes`;
+                                northbound.appendChild(arrivalElement)
+                            }
+                            // arrivalsContent.innerHTML = realtime;
                         }.bind(null, stopID, stopname, trainLine));
                     } else {
                         // console.log(stopname)

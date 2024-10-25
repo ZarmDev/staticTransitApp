@@ -29,3 +29,6 @@ Attribution: https://commons.wikimedia.org/wiki/File:New_York_City_Greater_NY_US
 Link: https://zarmdev.github.io/staticTransitApp/leaflet_svg_map.html
 
 Attribution: https://commons.wikimedia.org/wiki/File:New_York_City_Greater_NY_US_street_map.svg
+
+# Contributers:
+How to run this? You can either open the index.html or run live server

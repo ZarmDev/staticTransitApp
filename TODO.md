@@ -1,0 +1,2 @@
+- Use routeObject to show what northbound and southbound is in the arrivals
+- Make sure to update transitHelper to allow getTrainArrivals to look for multiple trains or you can also just update the html file here to allow you to choose which train you want arrivals from

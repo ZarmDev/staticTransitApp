@@ -11,6 +11,7 @@
     <!-- Used to test on the web -->
     <script src="./bundle.js"></script>
     <script src="./scripts/out.js"></script>
+    <script src="./scripts/routeout.js"></script>
     <script src="./scripts/examples.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/gh/ZarmDev/transitHelper@experimental/dist/bundle.js"></script> -->
     <style>
@@ -21,6 +22,7 @@
             font-optical-sizing: auto;
             font-weight: 300;
             font-style: normal;
+            overflow:hidden;
         }
 
         .custom-icon {
@@ -61,11 +63,11 @@
             z-index: 1;
         }
 
-        #arrivals #northbound {
+        #arrivals #northboundArrivals {
             display: none;
         }
 
-        #arrivals #southbound {
+        #arrivals #southboundArrivals {
             display: none;
         }
 
@@ -136,10 +138,12 @@
             position: absolute;
             left: 65vw;
             width: auto;
-            height: auto;
+            height: 80vh;
             z-index: 3;
             border-radius: 10px;
             background-color: rgba(71, 59, 85, 0.507);
+            overflow-y: scroll;
+            display: none;
         }
         #alertsContent img {
             width: 4ch;
@@ -173,14 +177,15 @@
         <button class="X" id="arrivalsX"><</button>
                 <h1>Arrivals for the <span id="trainToShow"></span> train</h1>
                 <div id="arrivalsContent">
-                    <span class="option">Northbound</span>
-                    <span class="option">Southbound</span>
-                    <div id="northbound"></div>
-                    <div id="southbound"></div>
+                    <span id="northbound" class="option">Northbound</span>
+                    <span id="southbound" class="option">Southbound</span>
+                    <div id="northboundArrivals"></div>
+                    <div id="southboundArrivals"></div>
                 </div>
     </div>
     <div id="map"></div>
     <script>
+        const routeObject = getRouteObject();
         // Used to test on the web
         window.userLocation = [40.71775244918452, -73.9990371376651]
         window.iconFileLocations = getIconFileLocations()
@@ -191,6 +196,8 @@
         const trainToShow = document.getElementById('trainToShow');
         const northbound = document.getElementById('northbound');
         const southbound = document.getElementById('southbound');
+        const northboundArrivals = document.getElementById('northboundArrivals');
+        const southboundArrivals = document.getElementById('southboundArrivals');
         const alertsDropdown = document.getElementById('alertsDropdown');
         const alertsContent = document.getElementById('alertsContent');
 
@@ -225,10 +232,6 @@
         
         const trainLinesWithIcons = ["1", "2", "3", "4", "5", "6", "6x", "7", "7x", "a", "b", "c", "d", "e", "f", "g", "h", "j", "l", "m", "n", "q", "r", "s", "sf", "sir", "sr", "t", "w", "z"].map((item) => { return item.toUpperCase() })
         alertsDropdown.addEventListener("click", async () => {
-            //         [line: string]: {
-            //     headerText: string,
-            //     descriptionText: string | null
-            // }
             const alerts = await getTrainServiceAlerts(true, false);
             const lines = Object.keys(alerts);
             const text = Object.values(alerts);
@@ -244,6 +247,7 @@
                 headerText.innerHTML = text[i]["headerText"];
                 alertsContent.appendChild(headerText)
             }
+            alertsContent.style.display = 'block';
         })
 
         const arrivalsX = document.getElementById('arrivalsX');
@@ -261,12 +265,12 @@
             // Pass in i to make sure it can access options[i]
             (function (i) {
                 options[i].addEventListener('click', () => {
-                    if (options[i].innerText == 'Northbound') {
-                        northbound.style.display = 'block';
-                        southbound.style.display = 'none';
+                    if (options[i].id == 'northbound') {
+                        northboundArrivals.style.display = 'block';
+                        southboundArrivals.style.display = 'none';
                     } else {
-                        southbound.style.display = 'block';
-                        northbound.style.display = 'none';
+                        southboundArrivals.style.display = 'block';
+                        northboundArrivals.style.display = 'none';
                     }
                 })
             })(i);
@@ -370,38 +374,44 @@
                         });
                         let marker = L.marker(latlng, { icon: customIcon }).addTo(markerLayer);
                         // doesn't matter which train line - they are all grouped together
+                        // console.log(trainLines)
                         let trainLine = trainLines[0];
-                        marker.on('click', async function (stopID, stopname, trainLine) {
-                            console.log(stopID)
-                            northbound.innerHTML = ''
-                            southbound.innerHTML = ''
+                        marker.on('click', async function (stopID, stopname, trainLine, northboundArrivals, southboundArrivals) {
+                            northboundArrivals.innerHTML = ''
+                            southboundArrivals.innerHTML = ''
                             const targetStopID = stopID
                             const direction = ""
                             const date = Date.now()
                             const realtime = await getTrainArrivals(trainLine, targetStopID, date, direction);
+                            console.log(realtime);
+                            // If realtime returns nothing, then that means the station isn't being served or there is an error
+                            if (realtime.length == 0) {
+                                alert(`The ${trainLines} aren't running at this station right now. Please check the service alerts to learn more.`);
+                                return;
+                            }
                             arrivals.style.display = 'block';
                             trainToShow.innerHTML = realtime[0]["line"];
-                            var northBound = [];
-                            var southBound = [];
+                            var northboundArrivalsArr = [];
+                            var southboundArrivalsArr = [];
                             for (var i = 0; i < realtime.length; i++) {
                                 if (realtime[i]["direction"] == 'S') {
-                                    southBound.push(Number(realtime[i]["arrivalTime"]))
+                                    southboundArrivalsArr.push(Number(realtime[i]["arrivalTime"]))
                                 } else {
-                                    northBound.push(Number(realtime[i]["arrivalTime"]))
+                                    northboundArrivalsArr.push(Number(realtime[i]["arrivalTime"]))
                                 }
                             }
-                            for (var i = 0; i < southBound.length; i++) {
+                            for (var i = 0; i < southboundArrivalsArr.length; i++) {
                                 const arrivalElement = document.createElement('div');
-                                arrivalElement.innerHTML = `In ${southBound[i]} minutes`;
-                                southbound.appendChild(arrivalElement)
+                                arrivalElement.innerHTML = `In ${southboundArrivalsArr[i]} minutes`;
+                                southboundArrivals.appendChild(arrivalElement)
                             }
-                            for (var i = 0; i < northBound.length; i++) {
+                            for (var i = 0; i < northboundArrivalsArr.length; i++) {
                                 const arrivalElement = document.createElement('div');
-                                arrivalElement.innerHTML = `In ${northBound[i]} minutes`;
-                                northbound.appendChild(arrivalElement)
+                                arrivalElement.innerHTML = `In ${northboundArrivalsArr[i]} minutes`;
+                                northboundArrivals.appendChild(arrivalElement)
                             }
                             // arrivalsContent.innerHTML = realtime;
-                        }.bind(null, stopID, stopname, trainLine));
+                        }.bind(null, stopID, stopname, trainLine, northboundArrivals, southboundArrivals));
                     } else {
                         // console.log(stopname)
                         var busIcon = L.icon({
